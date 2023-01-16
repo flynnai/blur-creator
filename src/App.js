@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 function App() {
-    const imgRef = useRef(null);
     const recolorCanvasRef = useRef(null);
 
     const [imageData, setImageData] = useState(null);
@@ -10,35 +9,24 @@ function App() {
         process.env.PUBLIC_URL + "/images/son_of_man.jpeg"
     );
 
-    // useEffect(() => {
-    //     console.log("Ref:", imgRef.current);
-    //     const img = imgRef.current;
-    //     if (img) {
-
-    //         if (img.complete) {
-    //             grabImageData();
-    //         } else img.onload = grabImageData;
-    //     }
-    // }, [imgRef.current, recolorCanvasRef.current]);
-
-    // const recolorImage = () => {
-    //     const recolorC = recolorCanvasRef.current;
-    //     const img = imgRef.current;
-
-    //     const width = (recolorC.width = img.naturalWidth || img.width);
-    //     const height = (recolorC.height = img.naturalHeight || img.height);
-    //     for (let y = 0; y < height; y++) {
-    //         for (let x = 0; x < width; x++) {
-    //             const p = pixels[y * width + x];
-    //             recolorCtx.fillStyle = COLORS[p.group];
-    //             recolorCtx.fillRect(x, y, 1, 1);
-    //         }
-    //     }
-    // };
+    const recolorImage = (canvas, newData, width, height) => {
+        console.log("Recoloring ", canvas, "with ", newData, width, height);
+        const ctx = canvas.getContext("2d");
+        canvas.width = width;
+        canvas.height = height;
+        for (let row = 0; row < height; row++) {
+            for (let col = 0; col < width; col++) {
+                const index = (row * width + col) * 4;
+                const [r, g, b, a] = newData.slice(index, index + 4);
+                ctx.fillStyle = `rgba(${r},${g},${b},${a / 255})`;
+                ctx.fillRect(row, col, 1, 1);
+            }
+        }
+    };
 
     const grabImageData = (e) => {
         console.log("running with e:", e);
-        const img = imgRef.current;
+        const img = e.target;
         // create a temp canvas to put our image on
         const dataCanvas = document.createElement("CANVAS");
         const dataCtx = dataCanvas.getContext("2d");
@@ -51,20 +39,34 @@ function App() {
         );
     };
 
+    const blurPixel = (oldData, row, col) => {
+        return [0, 0, 0, 255];
+    };
+
     const processImage = () => {
         console.log("Image data is ", imageData);
-        // const pixels = [];
-        // for (let i = 0; i < img_c.width * img_c.height * 4; i += 4) {
-        //     const r = imgdata.data[i];
-        //     const g = imgdata.data[i + 1];
-        //     const b = imgdata.data[i + 2];
-        //     pixels.push(new Pixel(r, g, b));
-        // }
+        const oldData = imageData.data;
+        const newData = new Uint8ClampedArray(imageData.data);
+        const { width, height } = imageData;
+        console.log("The new data is ", newData, "old data is ", oldData);
+
+        for (let row = 0; row < height; row++) {
+            for (let col = 0; col < width; col++) {
+                const pixelIndex = (row * width + col) * 4;
+                const [r, g, b, a] = blurPixel(oldData, row, col);
+                newData[pixelIndex] = r;
+                newData[pixelIndex + 1] = g;
+                newData[pixelIndex + 2] = b;
+                newData[pixelIndex + 3] = a;
+            }
+        }
+
+        recolorImage(recolorCanvasRef.current, newData, width, height);
     };
 
     return (
         <div>
-            <img src={imageSrc} ref={imgRef} onLoad={grabImageData} />
+            <img src={imageSrc} onLoad={grabImageData} />
             <canvas width="640" height="480" ref={recolorCanvasRef}></canvas>
             <button onClick={processImage}>Process</button>
         </div>
