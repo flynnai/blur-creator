@@ -63,9 +63,12 @@ void main_func(Pixel *old_buffer, unsigned int width, unsigned int height)
                     }
                 }
             }
-            kernel_r /= total_applied;
-            kernel_g /= total_applied;
-            kernel_b /= total_applied;
+            if (total_applied > 0)
+            {
+                kernel_r /= total_applied;
+                kernel_g /= total_applied;
+                kernel_b /= total_applied;
+            }
             unsigned int index = row * width + col;
             new_buffer[index].r = (uint8_t)kernel_r;
             new_buffer[index].g = (uint8_t)kernel_g;
