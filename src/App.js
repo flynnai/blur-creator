@@ -8,6 +8,7 @@ function App() {
     const [imageSrc, setImageSrc] = useState(
         // process.env.PUBLIC_URL + "/images/son_of_man.jpeg"
         process.env.PUBLIC_URL + "/images/color_explosion.jpeg"
+        // process.env.PUBLIC_URL + "/images/lamppost_foggy.jpeg"
         // process.env.PUBLIC_URL + "/images/lamp_post.jpeg"
     );
 
