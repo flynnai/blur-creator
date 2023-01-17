@@ -7,7 +7,8 @@ function App() {
     const [imageData, setImageData] = useState(null);
     const [imageSrc, setImageSrc] = useState(
         // process.env.PUBLIC_URL + "/images/son_of_man.jpeg"
-        process.env.PUBLIC_URL + "/images/color_explosion.jpeg"
+        // process.env.PUBLIC_URL + "/images/color_explosion.jpeg"
+        process.env.PUBLIC_URL + "/images/fire_on_the_coast.jpeg"
         // process.env.PUBLIC_URL + "/images/lamppost_foggy.jpeg"
         // process.env.PUBLIC_URL + "/images/lamp_post.jpeg"
     );
@@ -99,19 +100,30 @@ function App() {
         const { instance } = await WebAssembly.instantiate(bytes);
         const { main_func, memory } = instance.exports;
 
-        console.log("Original instance memory:", memory.buffer.byteLength);
-        console.log("growing...:", memory.grow(40));
-        // TODO calculate correct pages to grow by
-        console.log("Instance memory:", memory.buffer.byteLength);
-
         console.log("Image data is ", imageData);
         const { width, height } = imageData;
+
         // share an array between C and JS
-        const sharedArray = new Uint8ClampedArray(
-            memory.buffer,
-            0,
-            4 * width * height * 2
-        );
+        let sharedArray;
+        let enoughMemory = false;
+        while (!enoughMemory) {
+            try {
+                sharedArray = new Uint8ClampedArray(
+                    memory.buffer,
+                    0,
+                    4 * width * height * 2
+                );
+                enoughMemory = true;
+            } catch (err) {
+                if (err instanceof RangeError) {
+                    memory.grow(10);
+                } else {
+                    throw err;
+                }
+            }
+        }
+        console.log("Memory:", memory);
+
         sharedArray.set(imageData.data);
         // use the Uint8ClampedArray class to set the value of shared array's second half
         const newArray = new Uint8ClampedArray(
