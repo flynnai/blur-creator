@@ -9,14 +9,19 @@ struct objPixel
 };
 typedef struct objPixel Pixel;
 
-char *c_hello(Pixel *buffer, unsigned int img_width, unsigned int img_height)
+void main_func(Pixel *old_buffer, unsigned int width, unsigned int height)
 {
-    for (unsigned int row = 0; row < img_height; row++)
+    Pixel *new_buffer = old_buffer + width * height;
+    for (unsigned int row = 0; row < height; row++)
     {
-        for (unsigned int col = 0; col < img_width; col++)
+        for (unsigned int col = 0; col < width; col++)
         {
-            buffer[row * img_width + col].r = 255;
+            unsigned int index = row * width + col;
+            unsigned int avg = (old_buffer[index].r + old_buffer[index].g + old_buffer[index].b) / 3;
+            new_buffer[index].r = avg;
+            new_buffer[index].g = avg;
+            new_buffer[index].b = avg;
+            // old_buffer[row * width + col].r = 255;
         }
     }
-    return "fuckin hell";
 }

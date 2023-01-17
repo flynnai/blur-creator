@@ -96,6 +96,39 @@ function App() {
         const { width, height } = imageData;
         console.log("The new data is ", newData, "old data is ", oldData);
 
+        const response = await fetch(
+            process.env.PUBLIC_URL + "/wasm/main.wasm"
+        );
+        const bytes = await response.arrayBuffer();
+        const { instance } = await WebAssembly.instantiate(bytes);
+        const { main_func, memory } = instance.exports;
+
+        console.log("Instance memory:", memory.buffer.byteLength);
+        console.log("growing...:", memory.grow(40));
+        // TODO calculate correct pages to grow by
+        console.log("Instance memory:", memory.buffer.byteLength);
+
+        // share an array between C and JS
+        const sharedArray = new Uint8ClampedArray(
+            memory.buffer,
+            0,
+            4 * width * height * 2
+        );
+        sharedArray.set(oldData);
+        const newArray = new Uint8ClampedArray(
+            memory.buffer,
+            4 * width * height,
+            4 * width * height
+        );
+        newArray.set(newData);
+        console.log("Shared array is", sharedArray.slice(width * height * 4));
+
+        main_func(sharedArray, width, height);
+        console.log(
+            "Now, shared array is",
+            sharedArray.slice(width * height * 4)
+        );
+
         // for progress
         let progressGranularity = 1; // out of 100
         const numReportAfter = Math.ceil(
@@ -103,6 +136,13 @@ function App() {
         );
         let leftToReport = 0;
         let percentDone = 0;
+        recolorImage(
+            recolorCanvasRef.current,
+            sharedArray.slice(width * height * 4),
+            width,
+            height
+        );
+        return;
         for (let row = 0; row < height; row++) {
             for (let col = 0; col < width; col++) {
                 const pixelIndex = (row * width + col) * 4;
