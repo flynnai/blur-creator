@@ -1,6 +1,6 @@
 #include <stdint.h>
-#define KERNEL_SIZE 40
-#define NORMALIZATION 1600
+#define KERNEL_SIZE 30
+#define NORMALIZATION 900
 
 struct objPixel
 {
@@ -20,7 +20,15 @@ void main_func(Pixel *old_buffer, unsigned int width, unsigned int height)
     {
         for (unsigned int j = 0; j < KERNEL_SIZE; j++)
         {
-            kernel[i][j] = 1;
+            if (((int)i - KERNEL_SIZE / 2) * ((int)i - KERNEL_SIZE / 2) + ((int)j - KERNEL_SIZE / 2) * ((int)j - KERNEL_SIZE / 2) < (KERNEL_SIZE / 2 * KERNEL_SIZE / 2))
+            {
+
+                kernel[i][j] = 1;
+            }
+            else
+            {
+                kernel[i][j] = 0;
+            }
         }
     }
 
@@ -43,9 +51,9 @@ void main_func(Pixel *old_buffer, unsigned int width, unsigned int height)
                     if (real_i + (int)row > 0 && real_j + (int)col > 0 && real_i + (int)row < height && real_j + (int)col < width)
                     {
                         unsigned int target_index = (row + real_i) * width + col + real_j;
-                        kernel_r += old_buffer[target_index].r;
-                        kernel_g += old_buffer[target_index].g;
-                        kernel_b += old_buffer[target_index].b;
+                        kernel_r += old_buffer[target_index].r * kernel[i][j];
+                        kernel_g += old_buffer[target_index].g * kernel[i][j];
+                        kernel_b += old_buffer[target_index].b * kernel[i][j];
                     }
                 }
             }
