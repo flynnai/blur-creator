@@ -90,12 +90,7 @@ function App() {
     };
 
     const processImage = async () => {
-        console.log("Image data is ", imageData);
-        const oldData = imageData.data;
-        const newData = new Uint8ClampedArray(imageData.data);
-        const { width, height } = imageData;
-        console.log("The new data is ", newData, "old data is ", oldData);
-
+        // fetch WASM file to run
         const response = await fetch(
             process.env.PUBLIC_URL + "/wasm/main.wasm"
         );
@@ -103,24 +98,27 @@ function App() {
         const { instance } = await WebAssembly.instantiate(bytes);
         const { main_func, memory } = instance.exports;
 
-        console.log("Instance memory:", memory.buffer.byteLength);
+        console.log("Original instance memory:", memory.buffer.byteLength);
         console.log("growing...:", memory.grow(40));
         // TODO calculate correct pages to grow by
         console.log("Instance memory:", memory.buffer.byteLength);
 
+        console.log("Image data is ", imageData);
+        const { width, height } = imageData;
         // share an array between C and JS
         const sharedArray = new Uint8ClampedArray(
             memory.buffer,
             0,
             4 * width * height * 2
         );
-        sharedArray.set(oldData);
+        sharedArray.set(imageData.data);
+        // use the Uint8ClampedArray class to set the value of shared array's second half
         const newArray = new Uint8ClampedArray(
             memory.buffer,
             4 * width * height,
             4 * width * height
         );
-        newArray.set(newData);
+        newArray.set(imageData.data);
         console.log("Shared array is", sharedArray.slice(width * height * 4));
 
         main_func(sharedArray, width, height);
@@ -129,50 +127,12 @@ function App() {
             sharedArray.slice(width * height * 4)
         );
 
-        // for progress
-        let progressGranularity = 1; // out of 100
-        const numReportAfter = Math.ceil(
-            (height * width * progressGranularity) / 100
-        );
-        let leftToReport = 0;
-        let percentDone = 0;
         recolorImage(
             recolorCanvasRef.current,
             sharedArray.slice(width * height * 4),
             width,
             height
         );
-        return;
-        for (let row = 0; row < height; row++) {
-            for (let col = 0; col < width; col++) {
-                const pixelIndex = (row * width + col) * 4;
-                const [r, g, b, a] = blurPixel(
-                    oldData,
-                    row,
-                    col,
-                    width,
-                    height
-                );
-                newData[pixelIndex] = Math.floor(r);
-                newData[pixelIndex + 1] = Math.floor(g);
-                newData[pixelIndex + 2] = Math.floor(b);
-                newData[pixelIndex + 3] = Math.floor(a);
-
-                leftToReport--;
-                if (leftToReport <= 0) {
-                    leftToReport = numReportAfter;
-                    console.log(
-                        `We are ${percentDone++}% done. Just colored rgba:`,
-                        r,
-                        g,
-                        b,
-                        a
-                    );
-                }
-            }
-        }
-
-        recolorImage(recolorCanvasRef.current, newData, width, height);
     };
 
     return (
